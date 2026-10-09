@@ -10,40 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Trigger POST /api/results-history/scheduled-run
+      - name: Trigger scrape
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SHARED_SECRET: ${{ secrets.CRON_SHARED_SECRET }}
         run: |
-          if [ -z "$APP_URL" ] || [ -z "$CRON_SHARED_SECRET" ]; then
-            echo "ERROR: Missing required GitHub repository secrets (APP_URL or CRON_SHARED_SECRET)."
-            exit 1
-          fi
-
-          BASE_URL="${APP_URL%/}"
-          TARGET_URL="${BASE_URL}/api/results-history/scheduled-run"
-          echo "Triggering scheduled scrape at: ${TARGET_URL}"
-
-          HTTP_STATUS=$(curl -s -S -o response.json -w "%{http_code}" \
-            --max-time 120 \
-            --retry 0 \
-            -X POST "${TARGET_URL}" \
+          curl --fail-with-body -sS --max-time 120 --retry 0 \
+            -X POST "${APP_URL%/}/api/results-history/scheduled-run" \
             -H "Authorization: Bearer ${CRON_SHARED_SECRET}" \
-            -H "Content-Type: application/json")
-
-          echo "HTTP Status: ${HTTP_STATUS}"
-          echo "Response Body:"
-          cat response.json
-          echo ""
-
-          if [ "${HTTP_STATUS}" -ne 200 ]; then
-            echo "ERROR: Scraper trigger failed with non-200 HTTP status (${HTTP_STATUS})."
-            exit 1
-          fi
-
-          echo "SUCCESS: Scheduled scrape completed with HTTP 200."
-
-            
-          fi
-
-          echo "SUCCESS: Scheduled scrape completed with HTTP 200."
+            -H "Content-Type: application/json"
